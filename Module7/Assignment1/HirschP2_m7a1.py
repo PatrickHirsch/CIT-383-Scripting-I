@@ -9,6 +9,8 @@ import re
 
 VALID_EXTENTIONS=['txt','png','doc','dat']
 
+# Given a filename prefix and number of files to create, create a specified number of files numbered with a given prefix if they don't already exist.
+#   File extension defaults to first listed valid extension
 def create_files(file_name_prefix: str, num_of_files: int):
     if num_of_files < 0:
         raise IndexError("num_of_files must be non-negative")
@@ -22,7 +24,8 @@ def create_files(file_name_prefix: str, num_of_files: int):
         else:
             print(f"Creating file {filename}.")
             open(filename,'a').close()
-    
+
+# Given a directory name, create a new directory with that name if it does not already exist.
 def create_dir(name_of_directory: str):
     print(f"Making Directory {name_of_directory}...")
     
@@ -37,6 +40,7 @@ def create_dir(name_of_directory: str):
     os.mkdir(name_of_directory)
 
 
+# Given a filename and a new filename, renames a file assuming new name is no already taken.
 def rename_file(filename: str, new_name: str):
     if(os.path.exists(filename)==False):
         raise FileNotFoundError(f"{filename} does not exist.")
@@ -48,7 +52,8 @@ def rename_file(filename: str, new_name: str):
     print(f"Renaming {filename} to {new_name}")
     os.rename(filename,new_name)
 
-
+# Equivalent to ls command, given a directory path, print the path and the iterate over each file
+#   For each file, accordingly print whether its a file or directory, then its name.
 def display_contents(directory_name: str):
     print(f"Files in {directory_name}:")
     files=os.listdir(directory_name)
@@ -59,7 +64,7 @@ def display_contents(directory_name: str):
             file="[F] "+file
         print(file)
 
-
+# Iterates through a directory and changes all files of a specified extension to a different extension
 def rename_files_in_directory(target_directory: str, current_ext: str, new_ext: str):
     files=os.listdir(target_directory)
     for file in files:
@@ -72,13 +77,15 @@ def isInvalidFilename(filename:str)
 
 
 def main():
+    # Start by printing the current working directory
     print("Current Working Directory:")
     print(os.path.basename(os.getcwd())+" ("+os.getcwd()+")\n")
     
+    # Get the new directory to create for the script's execution, deriving username from home directory name.
     newdir=os.path.expanduser('~/CITFall2023'+os.path.basename(os.path.expanduser('~')))
     create_dir(newdir)
     
-    
+    # Prompt user for number of files to create, terminating program if an invalid number is given
     numFiles=input("Number of files to create: ")
     try:
         numFiles=int(numFiles)
@@ -86,6 +93,8 @@ def main():
         print(f"{numFiles} not a valid int.  Terminating program.")
         return
     
+    # Prompt for filename prefix and call create_files() to handle file creation, 
+    #   Handles errors thrown by create_files() by terminating the program with error message,
     filenamePrefix=input("Filename prefix: ")
     try:
         create_files(newdir+'/'+filenamePrefix,int(numFiles))
@@ -96,7 +105,7 @@ def main():
         print(f".  Terminating program.")
         return
     
-    # 4. Prompt the user for a new extension, and use rename_files_in_directory() to rename the files with the new extension. (5 points)
+    # Prompt the user for a new extension and call rename_files_in_directory() to change extensions
     fileExtention=input("File extension: ")
     if fileExtention not in VALID_EXTENTIONS:
         print(f'{fileExtention} is not a supported file extention.  Valid extentions are {VALID_EXTENTIONS}.  Terminating program.')
@@ -104,6 +113,7 @@ def main():
     else:
         rename_files_in_directory(newdir,VALID_EXTENTIONS[0],fileExtention)
     
+    # Print the contents of the created directory
     display_contents(newdir)
 main()
 
