@@ -6,6 +6,7 @@
 
 import os
 import subprocess
+import shutil
 import zipfile
 import datetime 
 import dateutil.relativedelta
@@ -32,10 +33,10 @@ def back_up_dir(dir_path:str,dest_path:str):
     if(checkDirectoryExists(dir_path)<1 or checkDirectoryExists(dest_path)<1):
         raise NameError("Provided file path either does not exist, or is a file.")
     
-    # Invoke a simple recursive copy command to copy dir_path to dest_path 
+    # Invoke a simple rsync command to copy dir_path to dest_path 
     #   handles any errors just by reporting an error occurred and the error message given
     try:
-        subprocess.run(['cp','-r',dir_path,dest_path],check=True)
+        subprocess.run(['rsync','-a',dir_path,dest_path],check=True)
     except Exception as e:
         print(f"An unknown error occurred in backing up your directory: {e}")
     
@@ -50,37 +51,15 @@ def archive_dir(dir_name: str, arch_type: str, archive_base_name: str):
     if arch_type not in VALID_ARCHIVE_TYPES:
         raise TypeError(f"Unsupported archive type: {arch_type}.")
     
-    # Based on the archive type supplied, fill in the command's fields accordingly
-    if arch_type=='zip':
-        cmd="zip"
-        flags="-r"
-        extention=".zip"
-    elif arch_type=='gztar':
-        cmd="tar"
-        flags="-czvf"
-        extention=".tar.gz"
-    elif arch_type=='tar':
-        cmd="tar"
-        flags="cvf"
-        extention=".tar"
-    elif arch_type=='bztar':
-        cmd="tar"
-        flags="-cjvf"
-        extention=".tar.bz2"
-    elif arch_type=='xztar':
-        cmd="tar"
-        flags="-cJvf"
-        extention=".tar.xz"
+    # Handle file paths as needed for shutil.make_archive()
+    archive_base_name=os.path.expanduser(f"~/{archive_base_name}")
+    dir_name=os.path.abspath(dir_name)
+    root_dir=os.path.dirname(dir_name)
+    base_dir=os.path.basename(dir_name)
     
-    # Ensure the filename of the archive to be created doesn't already exist
+    ret=shutil.make_archive(archive_base_name,arch_type,root_dir=root_dir,base_dir=base_dir)
+    print(f"Created {arch_type} archive at {ret}.")
     
-    # Issue the command as built to create the archive
-    #   handles any errors just by reporting an error occurred and the error message given
-    try:
-        subprocess.run([cmd,flags,"~/"+archive_base_name+extention,dir_name],check=True)
-    except Exception as e:
-        print(f"An unknown error occurred in creating your archive: {e}")
-
 
 # Given a file path to a ZIP and a file size threshold in KB report on all files within zip above threshold
 def get_large_archive(zip_file_path:str,threshold:int):
@@ -128,6 +107,8 @@ def get_recently_modified_files(dir_path:str):
     out=subprocess.run(['find',dir_path,'-type','f','-newermt',monthAgo.strftime("%Y%m%d")],check=True)
     
 
+# Series of "Invoke" functions to act as drivers for individual operations a user may select,
+#   Prompts for necessary input from user and passes them onto the appropriate functions
 def invoke_Backup():
     print("# Create backup of directory")
     dir_path=input("Provide path of directory to be backed up: ")
@@ -136,7 +117,6 @@ def invoke_Backup():
         back_up_dir(dir_path,dest_path)
     except Exception as e:
         print(f'ERROR: {e}')
-
 def invoke_Archive():
     print("# Create archive of directory")
     dir_name=input("Provide path of directory to be archived: ")
@@ -146,7 +126,6 @@ def invoke_Archive():
         archive_dir(dir_name,arch_type,archive_base_name)
     except Exception as e:
         print(f'ERROR: {e}')
-
 def invoke_Large():
     print("# Analyze .zip for large files")
     zip_file_path=input("Provide path to .zip file to analyze: ")
@@ -155,7 +134,6 @@ def invoke_Large():
         get_large_archive(zip_file_path,int(threshold))
     except Exception as e:
         print(f'ERROR: {e}')
-
 def invoke_Recent():
     print("# List files of in directory modified within last month: ")
     dir_path=input("Provide path to directory to analyze: ")
@@ -164,13 +142,15 @@ def invoke_Recent():
     except Exception as e:
         print(f'ERROR: {e}')
 
+
+# Primary driver of the program, prompts user with a menu then takes an int as input
+#   Passes off user to necessary "invoke" function based on int provided.
 def main():
     print("""Select your operation:
 1. Create backup of directory.
 2. Create archive of directory.
 3. Analyzing .zip archive for large files
-4. List recently modified files in directory.
-    """)
+4. List recently modified files in directory.""")
     userChoice=input(":")
     
     try:
