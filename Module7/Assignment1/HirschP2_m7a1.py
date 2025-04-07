@@ -72,7 +72,7 @@ def rename_files_in_directory(target_directory: str, current_ext: str, new_ext: 
         if newname != file:
             rename_file(target_directory+'/'+file,target_directory+'/'+newname)
 
-def isInvalidFilename(filename:str)
+def isInvalidFilename(filename:str):
     return False
 
 
